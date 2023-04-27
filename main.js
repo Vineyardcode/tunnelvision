@@ -30,7 +30,7 @@ for (let i = 0; i < points.length; i++) {
 
 const path = new THREE.CatmullRomCurve3(points);
 const tunnelGeometry = new THREE.TubeGeometry( path, 300, 2, 20, true );
-const tunnelMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, side : THREE.BackSide, wireframe:true } );
+const tunnelMaterial = new THREE.MeshBasicMaterial( { side : THREE.BackSide, wireframe:true } );
 
 
 const light = new THREE.PointLight(0xffffff, 1, 50);
@@ -38,11 +38,10 @@ scene.add(light);
 
 
 const geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
-const material = new  THREE.MeshLambertMaterial({
-  color: 189468,
-  emissive: 0x111111,
-  opacity: 0.9,
-  side : THREE.BackSide
+const material = new  THREE.MeshNormalMaterial( { 
+ 
+  side : THREE.BackSide,
+  wireframe: true
 });	
 
 const cube = new THREE.Mesh( geometry, material );
