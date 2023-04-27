@@ -1,6 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.001, 1000 );
 
@@ -32,14 +33,17 @@ const tunnelGeometry = new THREE.TubeGeometry( path, 300, 2, 20, true );
 const tunnelMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, side : THREE.BackSide, wireframe:true } );
 
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, 1, 1).normalize();
-light.castShadow = true;
+const light = new THREE.PointLight(0xffffff, 1, 50);
 scene.add(light);
 
 
 const geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
-const material = new THREE.MeshNormalMaterial({side : THREE.BackSide, wireframe:true});
+const material = new  THREE.MeshLambertMaterial({
+  color: 189468,
+  emissive: 0x111111,
+  opacity: 0.9,
+  side : THREE.BackSide
+});	
 
 const cube = new THREE.Mesh( geometry, material );
 const tunnel = new THREE.Mesh( tunnelGeometry, material );
@@ -49,88 +53,82 @@ scene.add( tunnel );
 
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild(renderer.domElement);
+renderer.setAnimationLoop( animation );
 
-document.body.appendChild( renderer.domElement );
+
+
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
 
+let isAudioContextStarted = false
 
 
+let audioContext = new AudioContext();
+function startAudioContext() {
+  if (!isAudioContextStarted) {
+    isAudioContextStarted = true;
+    audioContext.resume().then(() => {
+      console.log('AudioContext started');
+    });
+  }
+}
 
-
-
-
-
-
-    let isAudioContextStarted = false;
-
-    function startAudioContext() {
-      if (!isAudioContextStarted) {
-        isAudioContextStarted = true;
-        audioContext.resume().then(() => {
-          console.log('AudioContext started');
-        });
-      }
-    }
-
-    document.addEventListener('click', startAudioContext);
-    document.addEventListener('touchstart', startAudioContext);
+document.addEventListener('click', startAudioContext);
+document.addEventListener('touchstart', startAudioContext);
 
 // virtual cable {deviceId: 'VBAudioVACWDM'}
 
 
-  const audioContext = new AudioContext();
-  navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
-  const source = audioContext.createMediaStreamSource(stream);
-  const analyser = audioContext.createAnalyser();
-  analyser.fftSize = 64;
-  source.connect(analyser);
+function getSound(callback) {
+  
+  navigator.mediaDevices.getUserMedia({audio: {deviceId: 'VBAudioVACWDM'}})
+    .then(stream => {
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
 
-  renderer.setAnimationLoop( animation );
+      const timeDomainData = new Uint8Array(analyser.frequencyBinCount);
+      function updateAmplitude() {
+        analyser.getByteTimeDomainData(timeDomainData);
+        let amplitude = 0;
+        for (let i = 0; i < timeDomainData.length; i++) {
+          const sample = timeDomainData[i] / 128 - 1;
+          amplitude += sample * sample;
+        }
+        amplitude = Math.sqrt(amplitude / timeDomainData.length);
+        callback(amplitude);
+        requestAnimationFrame(updateAmplitude);
+      }
+      updateAmplitude();
+    })
+    .catch(error => {
+      console.error(error);
+    });
+}
+
+let amplitude = 0;
+getSound(newAmplitude => {
+  amplitude = newAmplitude;
+});
 
 let percentage = 0
+function animation() {
+  percentage += amplitude * 0.00001;
 
-  function animation() {
+  let p1 = path.getPointAt(percentage%1);
+  let p2 = path.getPointAt((percentage + 0.01)%1);
 
-    const timeDomainData = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteTimeDomainData(timeDomainData);
-    let amplitude = 0;
-    for (let i = 0; i < timeDomainData.length; i++) {
-      const sample = timeDomainData[i] / 128 - 1;
-      amplitude += sample * sample;
-    }
-    amplitude = Math.sqrt(amplitude / timeDomainData.length);
+  camera.position.set(p1.x,p1.y,p1.z);
+  camera.lookAt(p2);
+  light.position.set(p2.x, p2.y, p2.z);
 
+  renderer.render(scene, camera);
+  
+  
+  requestAnimationFrame(animation);
+}
 
-
-
-
-
-
-
-
-
-    percentage += 0.0000001;
-    
-    let p1 = path.getPointAt(percentage%1);
-    let p2 = path.getPointAt((percentage + 0.01)%1);
-
-    camera.position.set(p1.x,p1.y,p1.z);
-    camera.lookAt(p2);
-
-    light.position.set(p2.x, p2.y, p2.z);
-    
-    renderer.render(scene, camera);
-    requestAnimationFrame(animation)
-
-  }
-
-animation();
-
-})
-
-
-
-
- 
+requestAnimationFrame(animation);
