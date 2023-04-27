@@ -33,15 +33,17 @@ const tunnelGeometry = new THREE.TubeGeometry( path, 300, 2, 20, true );
 const tunnelMaterial = new THREE.MeshBasicMaterial( { side : THREE.BackSide, wireframe:true } );
 
 
-const light = new THREE.PointLight(0xffffff, 1, 50);
+const light = new THREE.PointLight(0xffffff, 1, 20);
+light.castShadow = true;
 scene.add(light);
 
 
 const geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
 const material = new  THREE.MeshNormalMaterial( { 
- 
+  
   side : THREE.BackSide,
-  wireframe: true
+  wireframe: false, 
+  flatShading: true,
 });	
 
 const cube = new THREE.Mesh( geometry, material );
@@ -115,7 +117,7 @@ getSound(newAmplitude => {
 
 let percentage = 0
 function animation() {
-  percentage += amplitude * 0.00001;
+  percentage += amplitude * 0.0001;
 
   let p1 = path.getPointAt(percentage%1);
   let p2 = path.getPointAt((percentage + 0.01)%1);
