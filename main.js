@@ -163,8 +163,9 @@ function animation() {
 
   // torusClone1.position.copy(p2);
   // torusClone1.lookAt(p2.clone().add(tubeTangent));
+  rotation+=amplitude
 
-  torus.rotateZ(percentage+=amplitude); // rotate the torus
+  torus.rotateZ(rotation/1000); // rotate the torus
   
   camera.position.set(p1.x,p1.y,p1.z);
   camera.lookAt(p2);
