@@ -39,7 +39,7 @@ const light = new THREE.PointLight(0xffffff, 1, 20);
 light.castShadow = true;
 scene.add(light);
 
-
+const cubeGeometry = new THREE.BoxGeometry( 1, 1, 1 )
 
 const torusGeometry = new THREE.TorusGeometry( 15, 3, 4, 4 )
 const material = new  THREE.MeshNormalMaterial( { 
@@ -49,18 +49,22 @@ const material = new  THREE.MeshNormalMaterial( {
 } );	
 const torusMaterial = new  THREE.MeshNormalMaterial( { 
   side : THREE.BackSide,
-  wireframe: false, 
+  transparent: true,
   flatShading: true,
+  opacity: 0.9,
 } );	
-
+const cubeMaterial = new  THREE.MeshNormalMaterial( { 
+  side : THREE.BackSide,
+  wireframe: false, 
+  flatShading: true
+} );	
 
 const torus = new THREE.Mesh( torusGeometry, torusMaterial );
 const tunnel = new THREE.Mesh( tunnelGeometry, material );
-const torusClone0 = torus.clone()
-const torusClone1 = torus.clone()
+const cube = new THREE.Mesh( cubeGeometry, cubeMaterial )
 scene.add( torus );
 scene.add( tunnel );
-// scene.add(torusClone0)
+scene.add( cube )
 // scene.add(torusClone1)
 
 
@@ -74,6 +78,20 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 
 
+
+
+const size = 1;
+
+// Define the geometry for the cube
+const geometry = new THREE.BoxGeometry(size, size, size);
+
+// Define the material for the cube
+const materiall = new THREE.MeshNormalMaterial({ transparent: true, opacity: 0.5, side: THREE.BackSide, flatShading: true });
+
+// Create the mesh object and add it to the scene
+const lines = new THREE.Mesh(geometry, materiall);
+lines.position.set(0, 0, 0);
+scene.add(lines);
 
 
 
@@ -123,19 +141,15 @@ function getSound(callback) {
 }
 
 let amplitude = 0;
-let cubeFlyBy = 0;
 
 getSound(newAmplitude => {
   amplitude = newAmplitude;
 });
 
 let percentage = 0
-let p1 = path.getPointAt(percentage%1);
-let p2 = path.getPointAt((percentage + 0.01)%1);
+
 
 let torusScale = 0.1
-let torusClone0Scale = 0.038
-
 
   torus.scale.set(torusScale, torusScale, torusScale)
   // torusClone0.scale.set(torusClone0Scale, torusClone0Scale, torusClone0Scale)
@@ -146,27 +160,57 @@ let torusClone0Scale = 0.038
   // torusClone1.position.set(p2.x, p2.y, p2.z)  
 
 let rotation = 0
+const maxRotation = 15;
+let increment = true;
+
+function easeOut(ratio) {
+  return 1 - Math.pow(1 - ratio, 3);
+}
+
 function animation() {
-  percentage += 0.000001;
+  // percentage += 0.000001;
 
   let p1 = path.getPointAt(percentage%1);
   let p2 = path.getPointAt((percentage + 0.01)%1);
-  let p3 = path.getPointAt((percentage + 0.02)%1);
-
+  let p3 = path.getPointAt((percentage + 0.025)%1);
 
   let tubeTangent = path.getTangentAt(percentage%1);
   torus.position.copy(p3);
   torus.lookAt(p3.clone().add(tubeTangent));
+
+  lines.position.copy(p3);
+  lines.lookAt(p3.clone().add(tubeTangent));
+
 
   // torusClone0.position.copy(p2);
   // torusClone0.lookAt(p2.clone().add(tubeTangent));
 
   // torusClone1.position.copy(p2);
   // torusClone1.lookAt(p2.clone().add(tubeTangent));
-  rotation+=amplitude
+ 
+  if (increment) {
+    rotation += 0.00001;
+    if (rotation >= maxRotation) {
+      increment = false;
+    }
+  } else {
+    rotation -= 0.00001;
+    if (rotation <= 0) {
+      increment = true;
+    }
+  }
 
-  torus.rotateZ(rotation/1000); // rotate the torus
-  
+
+  let ratio = rotation / maxRotation;
+  let easedRatio = easeOut(ratio);
+  let rotationRadians = easedRatio * Math.PI * 2;
+
+  torus.rotation.z = rotationRadians;
+  lines.rotation.x = rotationRadians*(-2);
+  lines.rotation.y = rotationRadians*(-3);
+  lines.rotation.z = rotationRadians*(-1);
+  lines.scale.set(1,1,amplitude+0.1)
+
   camera.position.set(p1.x,p1.y,p1.z);
   camera.lookAt(p2);
   light.position.set(p2.x, p2.y, p2.z);
