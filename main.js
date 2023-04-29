@@ -189,12 +189,12 @@ function animation() {
   // torusClone1.lookAt(p2.clone().add(tubeTangent));
  
   if (increment) {
-    rotation += 0.00001;
+    rotation += 0.0001;
     if (rotation >= maxRotation) {
       increment = false;
     }
   } else {
-    rotation -= 0.00001;
+    rotation -= 0.0001;
     if (rotation <= 0) {
       increment = true;
     }
