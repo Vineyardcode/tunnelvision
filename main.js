@@ -162,7 +162,7 @@ function easeOut(ratio) {
 
 
 function animation() {
-  percentage += 0.000001;
+  percentage += 0.0000007;
 
   let p1 = path.getPointAt(percentage%1);
   let p2 = path.getPointAt((percentage + 0.01)%1);
